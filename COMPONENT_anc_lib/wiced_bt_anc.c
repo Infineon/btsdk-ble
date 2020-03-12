@@ -689,8 +689,7 @@ void wiced_bt_anc_client_process_notification(wiced_bt_gatt_operation_complete_t
         if( p_data->response_data.att_value.len )
         {
             /* check if the received alert category is valid */
-            if( (p_data->response_data.att_value.p_data[0] >= ANP_ALERT_CATEGORY_ID_SIMPLE_ALERT) &&
-                (p_data->response_data.att_value.p_data[0] <= ANP_ALERT_CATEGORY_ID_INSTANT_MESSAGE))
+            if(p_data->response_data.att_value.p_data[0] <= ANP_ALERT_CATEGORY_ID_INSTANT_MESSAGE)
             {
                 event_data.new_alert_notification.new_alert_type = p_data->response_data.att_value.p_data[0];
                 /* notify new alert */
@@ -710,8 +709,7 @@ void wiced_bt_anc_client_process_notification(wiced_bt_gatt_operation_complete_t
         if( p_data->response_data.att_value.len == 2 )
         {
             /* check if the received alert category is valid */
-            if( (p_data->response_data.att_value.p_data[0] >= ANP_ALERT_CATEGORY_ID_SIMPLE_ALERT) &&
-                (p_data->response_data.att_value.p_data[0] <= ANP_ALERT_CATEGORY_ID_INSTANT_MESSAGE))
+            if(p_data->response_data.att_value.p_data[0] <= ANP_ALERT_CATEGORY_ID_INSTANT_MESSAGE)
             {
                 /* notify unread alert */
                 event_data.unread_alert_notification.unread_alert_type = p_data->response_data.att_value.p_data[0];

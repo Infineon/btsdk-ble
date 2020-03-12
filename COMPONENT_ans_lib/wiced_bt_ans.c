@@ -215,7 +215,7 @@ wiced_bt_gatt_status_t ans_lib_handle_client_alert_notification_control_point_wr
 
     if ((category_id != 0xFF) && (category_id >= ANP_NOTIFY_CATEGORY_COUNT))
     {
-        if( (cmd_id < ANP_ALERT_CONTROL_CMD_ENABLE_NEW_ALERTS) || (cmd_id > ANP_ALERT_CONTROL_CMD_NOTIFY_UNREAD_ALERTS_IMMEDIATE) )
+        if (cmd_id > ANP_ALERT_CONTROL_CMD_NOTIFY_UNREAD_ALERTS_IMMEDIATE)
         {
             ANS_TRACE_ERR("Wrong command ID: %d\n", cmd_id);
             return ANP_ALERT_NOTIFCATION_CONTROL_POINT_WRITE_CMD_NOT_SUPPORTED;
