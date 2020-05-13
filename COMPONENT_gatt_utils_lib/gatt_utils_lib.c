@@ -122,22 +122,6 @@ wiced_bt_gatt_status_t wiced_bt_util_send_gatt_read_by_type(uint16_t conn_id, ui
 }
 
 /*
- * This utility copies a character string to another
- */
-char *wiced_bt_util_strcpy(char *p_dst, char *p_src)
-{
-    register char *pd = p_dst;
-    register char *ps = p_src;
-
-    while (*ps)
-        *pd++ = *ps++;
-
-    *pd++ = 0;
-
-    return ( p_dst );
-}
-
-/*
  * wiced_bt_util_uuid_cpy
  * This utility function copies an UUID
  */
