@@ -2,7 +2,7 @@
 
 ### Overview
 
-This repo contains BLE libraries used in BTSDK2.0 and higher. The libraries included in this repo are:
+This repo contains BLE libraries used in BTSDK 2.0 and higher. The libraries included in this repo are:
 
 * anc_lib<br/>
     * Alert Notification Client library<br/>
@@ -26,3 +26,7 @@ This repo contains BLE libraries used in BTSDK2.0 and higher. The libraries incl
 
 * hrc_lib<br/>
     * Heart Rate Client library<br/>
+
+
+* hrs_lib<br/>
+    * Heart Rate Server library<br/>
