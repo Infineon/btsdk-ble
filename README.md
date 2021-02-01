@@ -2,7 +2,7 @@
 
 ### Overview
 
-This repo contains BLE libraries used in BTSDK 2.0 and higher. The libraries included in this repo are:
+This repo contains Bluetooth Low Energy (LE) libraries used in BTSDK 2.0 and higher. The libraries included in this repo are:
 
 * anc_lib<br/>
     * Alert Notification Client library<br/>
@@ -21,7 +21,7 @@ This repo contains BLE libraries used in BTSDK 2.0 and higher. The libraries inc
 
 
 * gatt\_utils\_lib<br/>
-    * BLE GATT utilities library<br/>
+    * LE GATT utilities library<br/>
 
 
 * hrc_lib<br/>
