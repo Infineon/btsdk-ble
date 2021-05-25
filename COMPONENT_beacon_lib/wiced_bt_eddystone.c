@@ -39,6 +39,7 @@
 #include "wiced_bt_stack.h"
 #include "wiced_timer.h"
 #include "wiced_bt_beacon.h"
+#include "wiced_bt_gatt.h"
 
 /******************************************************************************
 *                               Functions
