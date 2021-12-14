@@ -2,7 +2,7 @@
 
 ### Overview
 
-This repo contains Bluetooth Low Energy (LE) libraries used in BTSDK 2.0 and higher. The libraries included in this repo are:
+This repo contains Bluetooth&#174; Low Energy (LE) libraries used in BTSDK 2.0 and higher. The libraries included in this repo are:
 
 * anc_lib<br/>
     * Alert Notification Client library<br/>
