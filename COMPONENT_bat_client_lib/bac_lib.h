@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021, Cypress Semiconductor Corporation (an Infineon company) or
+ * Copyright 2016-2022, Cypress Semiconductor Corporation (an Infineon company) or
  * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
  *
  * This software, including source code, documentation and related
@@ -46,7 +46,11 @@
 #include "wiced_bt_gatt_util.h"
 #include "wiced_timer.h"
 #include "wiced_bt_trace.h"
-#include "bac_lib_vdep.h"           // stack dependent include
+#if BTSTACK_VER < 0x03000001
+#include "bac_lib_v1.h"
+#else
+#include "bac_lib_v3.h"
+#endif
 
 #ifdef WICED_BT_TRACE_ENABLE
 #define     BAC_LIB_TRACE                          WICED_BT_TRACE
@@ -80,6 +84,7 @@ typedef enum {
    BAS_MANUFACTURE_NAME_IDX,
    BAS_MANUFACTURE_NUMBER_IDX,
    BAS_SERIAL_NUMBER_IDX,
+   BAS_PRESENTATION_FORMAT_IDX,
 #endif
    MAX_SUPPORTED_CHAR,
 } bas_service_idx_e;

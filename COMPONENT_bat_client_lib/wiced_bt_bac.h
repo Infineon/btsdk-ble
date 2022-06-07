@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021, Cypress Semiconductor Corporation (an Infineon company) or
+ * Copyright 2016-2022, Cypress Semiconductor Corporation (an Infineon company) or
  * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
  *
  * This software, including source code, documentation and related
@@ -34,24 +34,38 @@
 /** @file
  *
  * Battery Status Client Profile library.
- * This file is applicable for all devices with BTSTACK version lower than 3.0, i.e. 20xxx and 43012C0
+ * This file is for backward compatiblity
  *
  */
 
+#ifndef __WICED_BT_BAC_H_
+#define __WICED_BT_BAC_H_
 
-#include "bac_lib.h"
+#ifndef ENABLE_BAC_LIB_320
 
-/*
- * bac_gatt_send_read -- send a read-by-handle request to server
- *
- *  parameter i -- index to array of characteristics
- */
-wiced_bt_gatt_status_t bac_gatt_send_read_by_handle(int i)
-{
-    wiced_bt_gatt_read_param_t read_req;
+#include "wiced_bt_battery_client.h"
 
-    memset( &read_req, 0, sizeof( wiced_bt_gatt_read_param_t ) );
-    read_req.by_handle.auth_req = GATT_AUTH_REQ_NONE;
-    read_req.by_handle.handle = wiced_bt_battery_client_cb.characteristics[i].val_handle;
-    return wiced_bt_gatt_send_read(wiced_bt_battery_client_cb.conn_id, GATT_READ_BY_HANDLE, &read_req);
-}
+#define wiced_bt_bac_event_t                    wiced_bt_battery_client_event_t
+#define wiced_bt_bac_event_data_t               wiced_bt_battery_client_event_data_t
+
+#define battery_level_rsp                       data
+#define battery_level_notification              data
+
+#define wiced_bt_bac_init                       wiced_bt_battery_client_init
+#define wiced_bt_bac_read_rsp                   wiced_bt_battery_client_read_rsp
+#define wiced_bt_bac_process_notification       wiced_bt_battery_client_process_notification
+#define wiced_bt_bac_client_connection_up       wiced_bt_battery_client_connection_up
+#define wiced_bt_bac_client_connection_down     wiced_bt_battery_client_connection_down
+#define wiced_bt_bac_discovery_result           wiced_bt_battery_client_discovery_result
+#define wiced_bt_bac_client_discovery_complete  wiced_bt_battery_client_discovery_complete
+#define wiced_bt_bac_discover                   wiced_bt_battery_client_discover
+
+#define WICED_BT_BAC_EVENT_BATTERY_LEVEL_NOTIFICATION   WICED_BT_BAC_EVENT_NOTIFICATION
+#define WICED_BT_BAC_EVENT_BATTERY_LEVEL_RSP            WICED_BT_BAC_EVENT_RSP
+
+wiced_bt_gatt_status_t wiced_bt_bac_enable_notification( uint16_t conn_id );
+wiced_bt_gatt_status_t wiced_bt_bac_disable_notification( uint16_t conn_id );
+wiced_bt_gatt_status_t wiced_bt_bac_read_battery_level(uint16_t conn_id);
+
+#endif // ENABLE_BAC_LIB_320
+#endif // __WICED_BT_BAC_H_

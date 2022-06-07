@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021, Cypress Semiconductor Corporation (an Infineon company) or
+ * Copyright 2016-2022, Cypress Semiconductor Corporation (an Infineon company) or
  * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
  *
  * This software, including source code, documentation and related
@@ -34,14 +34,45 @@
 /** @file
  *
  * Battery Status Client Profile library.
- * This file is applicable for all devices with BTSTACK version lower than 3.0, i.e. 20xxx and 43012C0
+ * This file is applicable for all devices with BTSTACK version 3.0 and greater, for example 55572
  *
  */
+#if BTSTACK_VER >= 0x03000001
 
-/******************************************************
- *  Macros for btstack version 3 compatibilty
- ******************************************************/
-#define wiced_bt_gatt_client_send_indication_confirm(id, handle) wiced_bt_gatt_send_indication_confirm(id, handle)
-#define bac_gatt_discovery_complete_type(p) p->disc_type
-#define WICED_BT_GATT_ATTRIBUTE_NOT_FOUND WICED_BT_GATT_NOT_FOUND
-#define bac_set_gatt_client_config_descriptor(id, handle, val) wiced_bt_util_set_gatt_client_config_descriptor(id, handle, val)
+#include "bac_lib.h"
+#include "wiced_memory.h"
+
+uint8_t bac_read_buffer[512];
+wiced_bt_gatt_status_t bac_gatt_send_read_by_handle(int i)
+{
+    return wiced_bt_gatt_client_send_read_handle( wiced_bt_battery_client_cb.conn_id, wiced_bt_battery_client_cb.characteristics[i].val_handle, 0, bac_read_buffer, sizeof(bac_read_buffer), GATT_AUTH_REQ_NONE);
+}
+
+/*
+ * bac_set_gatt_client_config_descriptor
+ *
+ * wiced_bt_util_set_gatt_client_config_descriptor(uint16_t conn_id, uint16_t handle, uint16_t value) is not working properly, we replace with new function
+ */
+wiced_bt_gatt_status_t bac_set_gatt_client_config_descriptor(uint16_t conn_id, uint16_t handle, uint16_t value)
+{
+    wiced_bt_gatt_status_t status = WICED_BT_GATT_INSUF_RESOURCE;
+    wiced_bt_gatt_write_hdr_t write_hdr = { 0 };
+
+    // Allocating a buffer to send the write request
+    uint8_t* val = wiced_bt_get_buffer(sizeof(uint16_t));
+
+    if (val)
+    {
+        WICED_MEMCPY(val, &value, sizeof(uint16_t));
+        write_hdr.auth_req = GATT_AUTH_REQ_NONE;
+        write_hdr.handle = handle; /* hard coded server ccd */
+        write_hdr.offset = 0;
+        write_hdr.len = 2;
+
+        // Register with the server to receive notification
+        status = wiced_bt_gatt_client_send_write(conn_id, GATT_REQ_WRITE, &write_hdr, val, NULL);
+    }
+    return status;
+}
+
+#endif // #if BTSTACK_VER >= 0x03000001

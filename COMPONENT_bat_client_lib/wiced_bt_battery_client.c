@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021, Cypress Semiconductor Corporation (an Infineon company) or
+ * Copyright 2016-2022, Cypress Semiconductor Corporation (an Infineon company) or
  * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
  *
  * This software, including source code, documentation and related
@@ -39,7 +39,10 @@
  */
 
 #include "bac_lib.h"
+#include "wiced_memory.h"
 
+// To cache handle of battery server characterstic descriptor
+uint16_t wicked_bt_battery_client_server_characterstic_handle;
 
 /******************************************************
  *                Variables Definitions
@@ -59,6 +62,7 @@ wiced_bt_battery_client_cb_t wiced_bt_battery_client_cb = {0,0,0,0,0,0,{},
      "Manufacture Name",
      "Manufacture Number",
      "Serial Number",
+     "Format Presentation",
  #endif
     },
 #endif
@@ -77,13 +81,14 @@ wiced_bt_battery_client_cb_t wiced_bt_battery_client_cb = {0,0,0,0,0,0,{},
      {UUID_CHARACTERISTIC_BATTERY_MANUFACTURE_NAME,         LEGATTDB_CHAR_PROP_READ | LEGATTDB_CHAR_PROP_INDICATE,  {WICED_FALSE,0}},
      {UUID_CHARACTERISTIC_BATTERY_MANUFACTURE_NUMBER,       LEGATTDB_CHAR_PROP_READ | LEGATTDB_CHAR_PROP_INDICATE,  {WICED_FALSE,0}},
      {UUID_CHARACTERISTIC_BATTERY_SERIAL_NUMBER,            LEGATTDB_CHAR_PROP_READ | LEGATTDB_CHAR_PROP_INDICATE,  {WICED_FALSE,0}},
+     {UUID_CHARACTERISTIC_BATTERY_FORMAT_PRESENTATION,      LEGATTDB_CHAR_PROP_READ,                                {WICED_FALSE,1}},
 #endif
     }};
 
 /******************************************************
  *               Functions
  ******************************************************/
-void battery_client_retry_timeout(uint32_t count)
+void battery_client_retry_timeout(TIMER_PARAM_TYPE count)
 {
     wiced_bt_gatt_status_t status;
     int i;
@@ -231,7 +236,7 @@ void wiced_bt_battery_client_discovery_result(wiced_bt_gatt_discovery_result_t *
     if ((p_data->discovery_type == GATT_DISCOVER_CHARACTERISTICS) &&
         (p_char->char_uuid.len == LEN_UUID_16))
     {
-        // Result for characteristic discovery.  Save appropriate handle baced on the UUID.
+        // Result for characteristic discovery.  Save appropriate handle based on the UUID.
         uint16_t uuid = p_char->char_uuid.uu.uuid16;
 
         for (i=0; i<MAX_SUPPORTED_CHAR; i++)
@@ -273,6 +278,17 @@ void wiced_bt_battery_client_discovery_result(wiced_bt_gatt_discovery_result_t *
                 {
                     wiced_bt_battery_client_cb.characteristics[i].cccd_handle = p_info->handle;
 //                    BAC_LIB_TRACE("Found CCCD handle:%04x for Battery %s\n", wiced_bt_battery_client_cb.characteristics[i].cccd_handle, wiced_bt_battery_client_cb.char_name[i]);
+                }
+            }
+        }
+        else if (p_info->type.uu.uuid16 == UUID_DESCRIPTOR_SERVER_CHARACTERISTIC_CONFIGURATION && uuid)
+        {
+            for (i=0; i<MAX_SUPPORTED_CHAR; i++)
+            {
+                if( uuid == wiced_bt_battery_client_cb.characteristics[i].uuid )
+                {
+                    wicked_bt_battery_client_server_characterstic_handle = p_info->handle;
+                    BAC_LIB_TRACE("Found Server Characterstic Descriptor, handle:%04x for Battery %s\n", wicked_bt_battery_client_server_characterstic_handle, wiced_bt_battery_client_cb.char_name[i]);
                 }
             }
         }
@@ -319,6 +335,9 @@ void wiced_bt_battery_client_discovery_complete(wiced_bt_gatt_discovery_complete
         wiced_bt_battery_client_cb.bac_current_state = BAC_CLIENT_STATE_CONNECTED;
         data_event.discovery.conn_id = p_data->conn_id;
         data_event.discovery.status = WICED_BT_GATT_SUCCESS;
+#ifndef ENABLE_BAC_LIB_320
+        data_event.discovery.notification_supported = wiced_bt_battery_client_cb.characteristics[BAS_BATTERY_LEVEL_IDX].properties & LEGATTDB_CHAR_PROP_NOTIFY ? TRUE : FALSE; // For BWC
+#endif
         wiced_bt_battery_client_cb.p_callback(WICED_BT_BAC_EVENT_DISCOVERY_COMPLETE,&data_event);
     }
 }
@@ -471,7 +490,9 @@ static void battery_client_callback(wiced_bt_battery_client_event_t event, wiced
                 data_event.data.len = p_data->response_data.att_value.len;
                 data_event.data.offset = p_data->response_data.att_value.offset;
                 data_event.data.p_data = p_data->response_data.att_value.p_data;
-
+#ifndef ENABLE_BAC_LIB_320
+                data_event.data.battery_level = *p_data->response_data.att_value.p_data; // For BWC
+#endif
                 wiced_bt_battery_client_cb.p_callback(event, &data_event);
             }
             return;
@@ -494,6 +515,39 @@ void wiced_bt_battery_client_process_notification(wiced_bt_gatt_operation_comple
 void wiced_bt_battery_client_process_indication(wiced_bt_gatt_operation_complete_t *p_data)
 {
     battery_client_callback(WICED_BT_BAC_EVENT_INDICATION, p_data);
-//    WICED_BT_TRACE( "Send indication confirm id:%d handle:%04x\n", p_data->conn_id,  p_data->response_data.handle);
+    WICED_BT_TRACE( "Send indication confirm id:%d handle:%04x\n", p_data->conn_id,  p_data->response_data.handle);
     wiced_bt_gatt_client_send_indication_confirm( p_data->conn_id, p_data->response_data.handle );
 }
+
+#ifndef ENABLE_BAC_LIB_320
+//////////////////////////////////////////////
+// backward compatible functions
+//////////////////////////////////////////////
+wiced_bt_gatt_status_t wiced_bt_bac_enable_notification( uint16_t conn_id )
+{
+    wiced_bt_battery_client_enable( conn_id );
+    return WICED_BT_GATT_SUCCESS;
+}
+
+wiced_bt_gatt_status_t wiced_bt_bac_disable_notification(uint16_t conn_id)
+{
+    wiced_bt_battery_client_disable( conn_id );
+    return WICED_BT_GATT_SUCCESS;
+}
+
+wiced_bt_gatt_status_t wiced_bt_bac_read_battery_level(uint16_t conn_id)
+{
+    BAC_LIB_TRACE("Send Read Battery %s value ...", wiced_bt_battery_client_cb.char_name[BAS_BATTERY_LEVEL_IDX]);
+    wiced_bt_gatt_status_t status = bac_gatt_send_read_by_handle(BAS_BATTERY_LEVEL_IDX);
+    if (status == WICED_BT_GATT_SUCCESS)
+    {
+        BAC_LIB_TRACE("success\n");
+    }
+    else
+    {
+        BAC_LIB_TRACE("failed (%d)\n", status);
+    }
+    return status;
+}
+
+#endif

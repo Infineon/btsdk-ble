@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021, Cypress Semiconductor Corporation (an Infineon company) or
+ * Copyright 2016-2022, Cypress Semiconductor Corporation (an Infineon company) or
  * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
  *
  * This software, including source code, documentation and related
@@ -34,9 +34,19 @@
 /** @file
  *
  * Battery Status Client Profile library.
- * This file contents btstack version 3 only defines
+ * This file is applicable for all devices with BTSTACK version lower than 3.0, i.e. 20xxx and 43012C0
  *
  */
 
-#define bac_gatt_discovery_complete_type(p) p->discovery_type
-wiced_bt_gatt_status_t bac_set_gatt_client_config_descriptor(uint16_t conn_id, uint16_t handle, uint16_t value);
+#ifndef _BAC_LIB_V1_
+#define _BAC_LIB_V1_
+
+/******************************************************
+ *  Macros for btstack version 3 compatibilty
+ ******************************************************/
+#define wiced_bt_gatt_client_send_indication_confirm(id, handle) wiced_bt_gatt_send_indication_confirm(id, handle)
+#define bac_gatt_discovery_complete_type(p) p->disc_type
+#define WICED_BT_GATT_ATTRIBUTE_NOT_FOUND WICED_BT_GATT_NOT_FOUND
+#define bac_set_gatt_client_config_descriptor(id, handle, val) wiced_bt_util_set_gatt_client_config_descriptor(id, handle, val)
+
+#endif // _BAC_LIB_V1_
