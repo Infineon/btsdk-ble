@@ -47,7 +47,11 @@ uint16_t wicked_bt_battery_client_server_characterstic_handle;
 /******************************************************
  *                Variables Definitions
  ******************************************************/
+#ifdef WICED_SDK_MAJOR_VER		// wiced_timer_t defined differently in BTSDK vs BTSTACK
 wiced_bt_battery_client_cb_t wiced_bt_battery_client_cb = {0,0,0,0,0,0,{},
+#else
+wiced_bt_battery_client_cb_t wiced_bt_battery_client_cb = {0,0,0,0,0,0,{0},
+#endif
 #ifdef WICED_BT_TRACE_ENABLE
     {"Level",
  #ifdef BAS_1_1

@@ -37,6 +37,13 @@
  * This file is applicable for all devices with BTSTACK version 3.0 and greater, for example 55572
  *
  */
+
+#ifndef BTSTACK_VER
+#ifndef COMPONENT_btstack_v1
+#include "wiced_bt_version.h"
+#endif
+#endif
+
 #if BTSTACK_VER >= 0x03000001
 
 #include "bac_lib.h"
