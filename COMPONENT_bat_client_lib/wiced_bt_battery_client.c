@@ -70,6 +70,7 @@ wiced_bt_battery_client_cb_t wiced_bt_battery_client_cb = {0,0,0,0,0,0,{0},
  #endif
     },
 #endif
+	0,
     //uint16_t uuid                                         mandatory_properties                                    format
     //-------------------------------------------           ----------------------------------                      ---
     {{UUID_CHARACTERISTIC_BATTERY_LEVEL,                    LEGATTDB_CHAR_PROP_READ,                                {WICED_FALSE,1}},
@@ -241,12 +242,10 @@ void wiced_bt_battery_client_discovery_result(wiced_bt_gatt_discovery_result_t *
         (p_char->char_uuid.len == LEN_UUID_16))
     {
         // Result for characteristic discovery.  Save appropriate handle based on the UUID.
-        uint16_t uuid = p_char->char_uuid.uu.uuid16;
-
         for (i=0; i<MAX_SUPPORTED_CHAR; i++)
         {
-//            BAC_LIB_TRACE("%d uuid:%04x %04x\n", i, uuid, wiced_bt_battery_client_cb.characteristics[i].uuid);
-            if( uuid == wiced_bt_battery_client_cb.characteristics[i].uuid )
+//            BAC_LIB_TRACE("%d uuid:%04x %04x\n", i, p_char->char_uuid.uu.uuid16, wiced_bt_battery_client_cb.characteristics[i].uuid);
+            if (p_char->char_uuid.uu.uuid16 == wiced_bt_battery_client_cb.characteristics[i].uuid)
             {
                 // check for mandatory properties
                 if ((p_char->characteristic_properties & wiced_bt_battery_client_cb.characteristics[i].mandatory_properties) ==
@@ -256,93 +255,172 @@ void wiced_bt_battery_client_discovery_result(wiced_bt_gatt_discovery_result_t *
                     wiced_bt_battery_client_cb.characteristics[i].val_handle = p_char->val_handle;
                     wiced_bt_battery_client_cb.characteristics[i].handle = p_char->handle;
                     wiced_bt_battery_client_cb.characteristics[i].cccd_handle = 0;
-                    BAC_LIB_TRACE("Found handle:%04x-%04x uuid:%04x Battery %s\n",p_char->handle, p_char->val_handle, p_char->char_uuid.uu.uuid16, wiced_bt_battery_client_cb.char_name[i]);
+                    BAC_LIB_TRACE("Found handle:%04x-%04x uuid:%04x Battery %s\n", p_char->handle, p_char->val_handle, p_char->char_uuid.uu.uuid16, wiced_bt_battery_client_cb.char_name[i]);
                 }
                 else
                 {
                     BAC_LIB_TRACE("Error! Found handle:%04x-%04x uuid:%04x Battery %s,\n\tthe properties (x%x) does not meet the mandatory requirement (x%x)\n",
-                                    p_char->handle, p_char->val_handle, p_char->char_uuid.uu.uuid16,
-                                    wiced_bt_battery_client_cb.char_name[i],
-                                    p_char->characteristic_properties,
-                                    wiced_bt_battery_client_cb.characteristics[i].mandatory_properties);
+                        p_char->handle, p_char->val_handle, p_char->char_uuid.uu.uuid16,
+                        wiced_bt_battery_client_cb.char_name[i],
+                        p_char->characteristic_properties,
+                        wiced_bt_battery_client_cb.characteristics[i].mandatory_properties);
                 }
             }
         }
     }
-    else if((p_data->discovery_type == GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS) &&
-            (p_info->type.len == LEN_UUID_16))
+    else if ((p_data->discovery_type == GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS) &&
+             (p_info->type.len == LEN_UUID_16))
     {
-        static uint16_t uuid = 0;
-
-        if (p_info->type.uu.uuid16 == UUID_DESCRIPTOR_CLIENT_CHARACTERISTIC_CONFIGURATION && uuid)
+        if (p_info->type.uu.uuid16 == UUID_DESCRIPTOR_CLIENT_CHARACTERISTIC_CONFIGURATION)
         {
-            for (i=0; i<MAX_SUPPORTED_CHAR; i++)
-            {
-                if( uuid == wiced_bt_battery_client_cb.characteristics[i].uuid )
-                {
-                    wiced_bt_battery_client_cb.characteristics[i].cccd_handle = p_info->handle;
-//                    BAC_LIB_TRACE("Found CCCD handle:%04x for Battery %s\n", wiced_bt_battery_client_cb.characteristics[i].cccd_handle, wiced_bt_battery_client_cb.char_name[i]);
-                }
-            }
+            wiced_bt_battery_client_cb.characteristics[wiced_bt_battery_client_cb.cur_char_idx].cccd_handle = p_info->handle;
+            //                    BAC_LIB_TRACE("Found CCCD handle:%04x for Battery %s\n", wiced_bt_battery_client_cb.characteristics[wiced_bt_battery_client_cb.cur_char_idx].cccd_handle, wiced_bt_battery_client_cb.char_name[wiced_bt_battery_client_cb.cur_char_idx]);
         }
-        else if (p_info->type.uu.uuid16 == UUID_DESCRIPTOR_SERVER_CHARACTERISTIC_CONFIGURATION && uuid)
+        else if (p_info->type.uu.uuid16 == UUID_DESCRIPTOR_SERVER_CHARACTERISTIC_CONFIGURATION)
         {
-            for (i=0; i<MAX_SUPPORTED_CHAR; i++)
-            {
-                if( uuid == wiced_bt_battery_client_cb.characteristics[i].uuid )
-                {
-                    wicked_bt_battery_client_server_characterstic_handle = p_info->handle;
-                    BAC_LIB_TRACE("Found Server Characterstic Descriptor, handle:%04x for Battery %s\n", wicked_bt_battery_client_server_characterstic_handle, wiced_bt_battery_client_cb.char_name[i]);
-                }
-            }
-        }
-        else
-        {
-            uuid = p_info->type.uu.uuid16; // save it
-//            BAC_LIB_TRACE("GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS: uuid:%04x %04x\n", uuid, p_info->handle);
+            wicked_bt_battery_client_server_characterstic_handle = p_info->handle;
+            BAC_LIB_TRACE("Found Server Characteristic Descriptor, handle:%04x for Char %s\n",
+                wicked_bt_battery_client_server_characterstic_handle, wiced_bt_battery_client_cb.char_name[wiced_bt_battery_client_cb.cur_char_idx]);
         }
     }
 }
 
-void wiced_bt_battery_client_discovery_complete(wiced_bt_gatt_discovery_complete_t *p_data)
+void wiced_bt_battery_client_discovery_complete(wiced_bt_gatt_discovery_complete_t* p_data)
 {
+#if BTSTACK_VER < 0x03000001
+    wiced_bt_gatt_discovery_type_t disc_type = p_data->disc_type;
+#else
+    wiced_bt_gatt_discovery_type_t disc_type = p_data->discovery_type;
+#endif
     wiced_bt_battery_client_event_data_t data_event;
+    int i, j;
 
-//    BAC_LIB_TRACE("wiced_bt_battery_client_discovery_complete state:%d, %d\n", wiced_bt_battery_client_cb.bac_current_state, bac_gatt_discovery_complete_type(p_data));
+    BAC_LIB_TRACE("wiced_bt_battery_client_discovery_complete state:%d, %d\n", wiced_bt_battery_client_cb.bac_current_state, bac_gatt_discovery_complete_type(p_data));
 
-    if( wiced_bt_battery_client_cb.bac_current_state == BAC_CLIENT_STATE_DISCOVER_CHARACTERISTIC )
+    if (disc_type == GATT_DISCOVER_CHARACTERISTICS)
     {
         // done with BAC characteristics, start reading descriptor handles
-        // Since Battery Level is mondatary, make sure the characteristics are present
-        if ( (wiced_bt_battery_client_cb.characteristics[BAS_BATTERY_LEVEL_IDX].handle == 0) ||
-             (wiced_bt_battery_client_cb.characteristics[BAS_BATTERY_LEVEL_IDX].val_handle == 0) )
+        // Since Battery Level is mandatory, make sure the characteristics are present
+        if ((wiced_bt_battery_client_cb.characteristics[BAS_BATTERY_LEVEL_IDX].handle == 0) ||
+            (wiced_bt_battery_client_cb.characteristics[BAS_BATTERY_LEVEL_IDX].val_handle == 0))
         {
             // Error! Missing mandatory Battery Level characteristic
             BAC_LIB_TRACE("Error! Cannot find handles for mandatory Battery %s characteristics\n", wiced_bt_battery_client_cb.char_name[0]);
-            wiced_bt_battery_client_cb.bac_current_state = BAC_CLIENT_STATE_IDLE;
+            wiced_bt_battery_client_cb.bac_current_state = BAC_CLIENT_STATE_CONNECTED;
 
             /* Tell the application that the GATT Discovery failed */
             data_event.discovery.conn_id = p_data->conn_id;
             data_event.discovery.status = WICED_BT_GATT_ATTRIBUTE_NOT_FOUND;
-            wiced_bt_battery_client_cb.p_callback(WICED_BT_BAC_EVENT_DISCOVERY_COMPLETE,&data_event);
+            wiced_bt_battery_client_cb.p_callback(WICED_BT_BAC_EVENT_DISCOVERY_COMPLETE, &data_event);
             return;
         }
 
-        wiced_bt_battery_client_cb.bac_current_state = BAC_CLIENT_STATE_DISCOVER_BATTERY_LEVEL_CCD;
-        wiced_bt_util_send_gatt_discover(p_data->conn_id, GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS,
-                UUID_DESCRIPTOR_CLIENT_CHARACTERISTIC_CONFIGURATION,
-                wiced_bt_battery_client_cb.bac_s_handle, wiced_bt_battery_client_cb.bac_e_handle);
-    }
-    else if ( wiced_bt_battery_client_cb.bac_current_state == BAC_CLIENT_STATE_DISCOVER_BATTERY_LEVEL_CCD )
-    {
-        /* Tell the application that the GATT Discovery was successful */
-        wiced_bt_battery_client_cb.bac_current_state = BAC_CLIENT_STATE_CONNECTED;
-        data_event.discovery.conn_id = p_data->conn_id;
-        data_event.discovery.status = WICED_BT_GATT_SUCCESS;
+        wiced_bt_battery_client_cb.bac_current_state = BAC_CLIENT_STATE_DISCOVER_DESCRIPTORS;
+
+        // Find the first characteristic which may have descriptors
+        for (i = 0; i < MAX_SUPPORTED_CHAR; i++)
+        {
+            if (wiced_bt_battery_client_cb.characteristics[i].handle == 0)
+            {
+                // characteristic of this type is not present
+                continue;
+            }
+            // found characteristic. Need to find next characteristic. If the characteristic were saved in the
+            // order they were received, we could have done i + 1. but unfortunately they are saved everywhere in the characteristic array.
+            // try to find the right one.
+            uint16_t next_handle = wiced_bt_battery_client_cb.bac_e_handle;
+            for (j = 0; j < MAX_SUPPORTED_CHAR; j++)
+            {
+                if ((i == j) || (wiced_bt_battery_client_cb.characteristics[j].handle == 0))
+                {
+                    continue;
+                }
+                if (wiced_bt_battery_client_cb.characteristics[j].handle > wiced_bt_battery_client_cb.characteristics[i].val_handle)
+                {
+                    // this char is after current. But is it the next one;
+                    if (wiced_bt_battery_client_cb.characteristics[j].handle < next_handle)
+                    {
+                        next_handle = wiced_bt_battery_client_cb.characteristics[j].handle - 1;
+                    }
+                }
+            }
+            // descriptors for the current characteristic may be located between val_handle + 1 and the next_handle which can be the
+            // handle of the next characteristic or the last handle of the service.
+            if (wiced_bt_battery_client_cb.characteristics[i].val_handle + 1 <= next_handle)
+            {
+                // this characteristic has descriptors
+                wiced_bt_battery_client_cb.cur_char_idx = i;
+
+                wiced_bt_util_send_gatt_discover(p_data->conn_id, GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS,
+                    UUID_DESCRIPTOR_CLIENT_CHARACTERISTIC_CONFIGURATION,
+                    wiced_bt_battery_client_cb.characteristics[i].val_handle + 1, next_handle);
+                break;
+            }
+        }
+        if (i == MAX_SUPPORTED_CHAR)
+        {
+            BAC_LIB_TRACE("No characteristics with descriptors\n");
+            wiced_bt_battery_client_cb.bac_current_state = BAC_CLIENT_STATE_CONNECTED;
+
+            /* Tell the application that the GATT Discovery failed */
+            data_event.discovery.conn_id = p_data->conn_id;
 #ifndef ENABLE_BAC_LIB_320
-        data_event.discovery.notification_supported = wiced_bt_battery_client_cb.characteristics[BAS_BATTERY_LEVEL_IDX].properties & LEGATTDB_CHAR_PROP_NOTIFY ? TRUE : FALSE; // For BWC
+            data_event.discovery.notification_supported = FALSE; // For BWC
 #endif
-        wiced_bt_battery_client_cb.p_callback(WICED_BT_BAC_EVENT_DISCOVERY_COMPLETE,&data_event);
+            data_event.discovery.status = WICED_BT_GATT_SUCCESS;
+            wiced_bt_battery_client_cb.p_callback(WICED_BT_BAC_EVENT_DISCOVERY_COMPLETE, &data_event);
+        }
+    }
+    else if (disc_type == GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS)
+    {
+        // Completed descriptors discovery for characteristic with index wiced_bt_battery_client_cb.cur_char_idx.
+        // If there are other characteristics, we may need to do more discovery procedures.
+        for (i = wiced_bt_battery_client_cb.cur_char_idx + 1; i < MAX_SUPPORTED_CHAR; i++)
+        {
+            if (wiced_bt_battery_client_cb.characteristics[i].handle == 0)
+            {
+                // characteristic of this type is not present
+                continue;
+            }
+            // found characteristic. Need to find the next characteristic. If the characteristic were saved in the
+            // order they were received, we could have done i + 1. but unfortunately they are saved everywhere in the characteristic array.
+            // try to find the right one.
+            uint16_t next_handle = wiced_bt_battery_client_cb.bac_e_handle;
+            for (j = 0; j < MAX_SUPPORTED_CHAR; j++)
+            {
+                if (wiced_bt_battery_client_cb.characteristics[j].handle > wiced_bt_battery_client_cb.characteristics[i].val_handle)
+                {
+                    // this char is after current. But is it the next one;
+                    if (wiced_bt_battery_client_cb.characteristics[j].handle < next_handle)
+                    {
+                        next_handle = wiced_bt_battery_client_cb.characteristics[j].handle;
+                    }
+                }
+            }
+            // descriptors for the current characteristic may be located between val_handle + 1 and the next_handle which can be the
+            // handle of the next characteristic or the last handle of the service.
+            if (wiced_bt_battery_client_cb.characteristics[i].val_handle + 1 < next_handle)
+            {
+                // this characteristic has descriptors
+                wiced_bt_battery_client_cb.cur_char_idx = i;
+
+                wiced_bt_util_send_gatt_discover(p_data->conn_id, GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS,
+                    UUID_DESCRIPTOR_CLIENT_CHARACTERISTIC_CONFIGURATION,
+                    wiced_bt_battery_client_cb.characteristics[i].val_handle + 1, next_handle);
+                break;
+            }
+        }
+        if (i == MAX_SUPPORTED_CHAR)
+        {
+            /* Tell the application that the GATT Discovery was successful */
+            wiced_bt_battery_client_cb.bac_current_state = BAC_CLIENT_STATE_CONNECTED;
+            data_event.discovery.conn_id = p_data->conn_id;
+            data_event.discovery.status = WICED_BT_GATT_SUCCESS;
+#ifndef ENABLE_BAC_LIB_320
+            data_event.discovery.notification_supported = wiced_bt_battery_client_cb.characteristics[BAS_BATTERY_LEVEL_IDX].properties & LEGATTDB_CHAR_PROP_NOTIFY ? TRUE : FALSE; // For BWC
+#endif
+            wiced_bt_battery_client_cb.p_callback(WICED_BT_BAC_EVENT_DISCOVERY_COMPLETE, &data_event);
+        }
     }
 }
 
@@ -350,7 +428,7 @@ static wiced_bt_gatt_status_t battery_client_start_action(char * msg, uint8_t ac
 {
     int i;
 
-    if( wiced_bt_battery_client_cb.bac_current_state != BAC_CLIENT_STATE_CONNECTED )
+    if (wiced_bt_battery_client_cb.bac_current_state != BAC_CLIENT_STATE_CONNECTED)
     {
         BAC_LIB_TRACE("Illegal State: %d, cannot %s\n",wiced_bt_battery_client_cb.bac_current_state, msg);
         return WICED_BT_GATT_ERROR;

@@ -67,7 +67,7 @@ enum
     BAC_CLIENT_STATE_IDLE                       = 0x00,
     BAC_CLIENT_STATE_CONNECTED                  = 0x01,
     BAC_CLIENT_STATE_DISCOVER_CHARACTERISTIC    = 0x02,
-    BAC_CLIENT_STATE_DISCOVER_BATTERY_LEVEL_CCD = 0x03,
+    BAC_CLIENT_STATE_DISCOVER_DESCRIPTORS       = 0x03,
 };
 
 typedef enum {
@@ -138,6 +138,7 @@ typedef struct
 #ifdef WICED_BT_TRACE_ENABLE
     char *   char_name[MAX_SUPPORTED_CHAR];         /* characteristic name */
 #endif
+    uint8_t cur_char_idx;                    /* index of characteristic currently being discovered */
     bac_char_t characteristics[MAX_SUPPORTED_CHAR];
 } wiced_bt_battery_client_cb_t;
 
