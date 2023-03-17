@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022, Cypress Semiconductor Corporation (an Infineon company) or
+ * Copyright 2016-2023, Cypress Semiconductor Corporation (an Infineon company) or
  * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
  *
  * This software, including source code, documentation and related
@@ -329,6 +329,8 @@ void wiced_bt_battery_client_discovery_complete(wiced_bt_gatt_discovery_complete
             // order they were received, we could have done i + 1. but unfortunately they are saved everywhere in the characteristic array.
             // try to find the right one.
             uint16_t next_handle = wiced_bt_battery_client_cb.bac_e_handle;
+
+#ifdef BAS_1_1
             for (j = 0; j < MAX_SUPPORTED_CHAR; j++)
             {
                 if ((i == j) || (wiced_bt_battery_client_cb.characteristics[j].handle == 0))
@@ -344,6 +346,7 @@ void wiced_bt_battery_client_discovery_complete(wiced_bt_gatt_discovery_complete
                     }
                 }
             }
+#endif
             // descriptors for the current characteristic may be located between val_handle + 1 and the next_handle which can be the
             // handle of the next characteristic or the last handle of the service.
             if (wiced_bt_battery_client_cb.characteristics[i].val_handle + 1 <= next_handle)
