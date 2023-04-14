@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright 2016-2023, Cypress Semiconductor Corporation (an Infineon company) or
  * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
  *
@@ -31,19 +31,25 @@
  * so agrees to indemnify Cypress against all liability.
  */
 
-/** @file
+/**
+ * file gattt_utils_lib.c
  *
- * Set of utility functions used by various applications
- *
+ * Set of gatt utility functions used by various applications
  */
+
+#if !defined BTSTACK_VER && !defined COMPONENT_btstack_v1
+#include "wiced_bt_version.h"
+#endif
+
+#if BTSTACK_VER < 0x03000001
 
 #include "wiced.h"
 #include "wiced_bt_gatt.h"
 #include "wiced_bt_gatt_util.h"
 #include "string.h"
 
-/*
- * Format and send GATT Write Request to set value of a G
+/**
+ * Set value of Client Configuration Descriptor
  */
 wiced_bt_gatt_status_t wiced_bt_util_set_gatt_client_config_descriptor(uint16_t conn_id, uint16_t handle, uint16_t value)
 {
@@ -67,8 +73,8 @@ wiced_bt_gatt_status_t wiced_bt_util_set_gatt_client_config_descriptor(uint16_t 
     return status;
 }
 
-/*
- * Format and send GATT Discover request
+/**
+ * Format and send GATT discover request
  */
 wiced_bt_gatt_status_t wiced_bt_util_send_gatt_discover(uint16_t conn_id, wiced_bt_gatt_discovery_type_t type, uint16_t uuid, uint16_t s_handle, uint16_t e_handle)
 {
@@ -88,7 +94,7 @@ wiced_bt_gatt_status_t wiced_bt_util_send_gatt_discover(uint16_t conn_id, wiced_
     return status;
 }
 
-/*
+/**
  * Format and send GATT Read by Handle request
  */
 wiced_bt_gatt_status_t wiced_bt_util_send_gatt_read_by_handle(uint16_t conn_id, uint16_t handle)
@@ -103,8 +109,8 @@ wiced_bt_gatt_status_t wiced_bt_util_send_gatt_read_by_handle(uint16_t conn_id, 
     return status;
 }
 
-/*
- * Format and send GATT Read by Type request
+/**
+ * Format and send Read by Type GATT request
  */
 wiced_bt_gatt_status_t wiced_bt_util_send_gatt_read_by_type(uint16_t conn_id, uint16_t s_handle, uint16_t e_handle, uint16_t uuid)
 {
@@ -121,8 +127,7 @@ wiced_bt_gatt_status_t wiced_bt_util_send_gatt_read_by_type(uint16_t conn_id, ui
     return status;
 }
 
-/*
- * wiced_bt_util_uuid_cpy
+/**
  * This utility function copies an UUID
  */
 int wiced_bt_util_uuid_cpy(wiced_bt_uuid_t *p_dst, wiced_bt_uuid_t *p_src)
@@ -147,11 +152,9 @@ int wiced_bt_util_uuid_cpy(wiced_bt_uuid_t *p_dst, wiced_bt_uuid_t *p_src)
     return 0;
 }
 
-/*
- * wiced_bt_util_uuid_cmp
+/**
  * This utility function Compares two UUIDs.
- * Note: This function can only compare UUIDs of same length
- * Return value: 0 if UUID are equal; -1 if error, 1 otherwise
+ * This function can only compare UUIDs of same length
  */
 int wiced_bt_util_uuid_cmp(wiced_bt_uuid_t *p_uuid1, wiced_bt_uuid_t *p_uuid2)
 {
@@ -176,3 +179,5 @@ int wiced_bt_util_uuid_cmp(wiced_bt_uuid_t *p_uuid1, wiced_bt_uuid_t *p_uuid2)
     }
     return -1;
 }
+
+#endif // #if BTSTACK_VER < 0x03000001
