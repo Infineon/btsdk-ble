@@ -75,6 +75,15 @@ wiced_bt_gatt_status_t wiced_bt_util_set_gatt_client_config_descriptor(uint16_t 
 
 /**
  * Format and send GATT discover request
+ *
+ * @param[in]  conn_id     : connection identifier.
+ * @param[in]  type        : GATT discovery type.
+ * @param[in]  uuid        : UUID of the attribute to search for. When searching for any discovery type other than GATT_DISCOVER_SERVICES_BY_UUID,
+ *                           the value 0 indicating it is searching for any uuid for that discvoery type with given handle range.
+ *                           When discoverying by type GATT_DISCOVER_SERVICES_BY_UUID, uuid=0000 is a valid uuid16 value to discover.
+ * @param[in]  s_handle    : Start handle.
+ * @param[in]  e_handle    : Start handle.
+ *
  */
 wiced_bt_gatt_status_t wiced_bt_util_send_gatt_discover(uint16_t conn_id, wiced_bt_gatt_discovery_type_t type, uint16_t uuid, uint16_t s_handle, uint16_t e_handle)
 {
@@ -82,15 +91,37 @@ wiced_bt_gatt_status_t wiced_bt_util_send_gatt_discover(uint16_t conn_id, wiced_
     wiced_bt_gatt_status_t          status;
 
     memset(&param, 0, sizeof(param));
-    if (uuid != 0)
+
+    // When we are discoverying for GATT_DISCOVER_SERVICES_BY_UUID or when discovery for any other
+    // type with a particular uuid, we need to copy the uuid value and specify the uuid type.
+    //
+    if ( (type==GATT_DISCOVER_SERVICES_BY_UUID) || (uuid != 0) )
     {
         param.uuid.len = LEN_UUID_16;
         param.uuid.uu.uuid16 = uuid;
     }
+
     param.s_handle = s_handle;
     param.e_handle = e_handle;
 
     status = wiced_bt_gatt_send_discover(conn_id, type, &param);
+    return status;
+}
+
+/**
+ * Format and send GATT discover request
+ */
+wiced_bt_gatt_status_t wiced_bt_util_send_gatt_discover_by_uuid128(uint16_t conn_id, uint8_t uuid[LEN_UUID_128], uint16_t s_handle, uint16_t e_handle)
+{
+    wiced_bt_gatt_discovery_param_t param;
+    wiced_bt_gatt_status_t          status;
+
+    param.uuid.len = LEN_UUID_128;
+    memcpy(&param.uuid.uu.uuid128, uuid, LEN_UUID_128);
+    param.s_handle = s_handle;
+    param.e_handle = e_handle;
+
+    status = wiced_bt_gatt_send_discover(conn_id, GATT_DISCOVER_SERVICES_BY_UUID, &param);
     return status;
 }
 
