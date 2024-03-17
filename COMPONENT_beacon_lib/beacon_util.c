@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023, Cypress Semiconductor Corporation (an Infineon company) or
+ * Copyright 2016-2024, Cypress Semiconductor Corporation (an Infineon company) or
  * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
  *
  * This software, including source code, documentation and related
@@ -57,7 +57,7 @@ void wiced_bt_beacon_set_adv_data(wiced_bt_beacon_ble_advert_elem_t *beacon_adv_
 }
 
 // For 43012C0 platform, the multi adv APIs are not defined in ROM, hence define them in library
-#if defined (CYW43012C0)
+#if defined (CYW43012C0) && !defined(USE_CYW43012C0_MULTIADV_LIB)
 
 #define BTM_SUCCESS                                          0
 #define BTM_ILLEGAL_VALUE                                    5
