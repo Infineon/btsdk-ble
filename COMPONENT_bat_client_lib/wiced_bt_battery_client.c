@@ -562,7 +562,7 @@ static void battery_client_callback(wiced_bt_battery_client_event_t event, wiced
     for (i=0; i<MAX_SUPPORTED_CHAR; i++)
     {
         // Find the handle
-        if ((handle == wiced_bt_battery_client_cb.characteristics[i].val_handle))
+        if (handle == wiced_bt_battery_client_cb.characteristics[i].val_handle)
         {
             if (battery_client_valid_data(p_data, i))
             {
